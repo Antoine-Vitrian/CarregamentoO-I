@@ -1,45 +1,41 @@
 import streamlit as st
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import Select
-from webdriver_manager.chrome import ChromeDriverManager
-import time
+import requests
+from bs4 import BeautifulSoup
 
-st.title("Automação Truck Monitor")
+st.title("Automação Truck Monitor (via requests)")
 
 if st.button("Iniciar programa"):
     usuario_input = st.text_input("Digite seu usuário")
     senha_input = st.text_input("Digite sua senha", type="password")
 
     if st.button("Login"):
-        # Configura Chrome headless (sem abrir janela)
-        options = webdriver.ChromeOptions()
-        options.add_argument("--headless")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--no-sandbox")
+        # URL base
+        url_login = "http://truckmonitor/login"   # ajuste conforme o endpoint real
+        url_monitor = "http://truckmonitor/MonitoracaoGC/Index?planta=SP&GC_TW=GC&tipoPesquisa=PL"
 
-        driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+        # Cria sessão para manter cookies
+        session = requests.Session()
 
-        driver.get("http://truckmonitor/")
+        # Payload de login (ajuste os nomes dos campos conforme o form HTML)
+        payload = {
+            "Login": usuario_input,
+            "Password": senha_input,
+            "Planta": "1"   # equivalente ao select
+        }
 
-        # Localiza campos
-        usuario = driver.find_element(By.ID, "Login")
-        senha = driver.find_element(By.ID, "inputPassword")
-        campo_select = driver.find_element(By.ID, "inputPlanta")
+        # Faz POST para logar
+        resp = session.post(url_login, data=payload)
 
-        # Seleciona planta
-        select = Select(campo_select)
-        select.select_by_value("1")
+        if resp.status_code == 200:
+            # Agora acessa a página de monitoramento
+            resp_monitor = session.get(url_monitor)
+            if resp_monitor.status_code == 200:
+                soup = BeautifulSoup(resp_monitor.text, "html.parser")
 
-        # Digita usuário e senha
-        usuario.send_keys(usuario_input)
-        senha.send_keys(senha_input)
-
-        time.sleep(20)
-
-        # Clica no botão de login
-        botao_login = driver.find_element(By.XPATH, "//button")
-        botao_login.click()
-
-        st.success("Login realizado com sucesso!")
-
+                # Exemplo: pegar título da página
+                titulo = soup.title.string if soup.title else "Sem título"
+                st.success(f"Login realizado! Página acessada: {titulo}")
+            else:
+                st.error("Não consegui acessar a página de monitoramento.")
+        else:
+            st.error("Falha no login. Verifique usuário/senha.")
