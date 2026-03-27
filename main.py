@@ -3,6 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 from webdriver_manager.chrome import ChromeDriverManager
+import time
 
 st.title("Automação Truck Monitor")
 
@@ -33,6 +34,8 @@ if st.button("Iniciar programa"):
         # Digita usuário e senha
         usuario.send_keys(usuario_input)
         senha.send_keys(senha_input)
+
+        time.sleep(20)
 
         # Clica no botão de login
         botao_login = driver.find_element(By.XPATH, "//button")
